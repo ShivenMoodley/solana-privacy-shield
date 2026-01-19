@@ -14,28 +14,10 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
-
-interface AnalysisData {
-  wallet: string;
-  score: number;
-  metrics: {
-    feePayerReuseRatio: number;
-    signerConcentration: number;
-    programEntropy: number;
-    counterpartyConcentration: number;
-    memoDetected: boolean;
-    temporalEntropy: number;
-  };
-  report: {
-    summary: string;
-    leaks: string[];
-    mitigations: string[];
-    checklist: string[];
-  };
-}
+import type { AnalysisResult } from "@/lib/api";
 
 interface AnalysisViewProps {
-  data: AnalysisData;
+  data: AnalysisResult;
   onBack: () => void;
 }
 
@@ -47,7 +29,7 @@ const getRiskLevel = (value: number, thresholds: [number, number, number]) => {
 };
 
 export const AnalysisView = ({ data, onBack }: AnalysisViewProps) => {
-  const { wallet, score, metrics, report } = data;
+  const { wallet, score, metrics, report, meta } = data;
 
   const copyWallet = () => {
     navigator.clipboard.writeText(wallet);
@@ -84,7 +66,7 @@ export const AnalysisView = ({ data, onBack }: AnalysisViewProps) => {
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-              Analysis Complete
+              {meta?.transactionCount || 0} transactions analyzed
             </div>
           </div>
         </div>
@@ -102,6 +84,22 @@ export const AnalysisView = ({ data, onBack }: AnalysisViewProps) => {
               Your wallet has been analyzed across 6 privacy dimensions. 
               Review the detailed metrics and AI-generated recommendations below.
             </p>
+            {meta && (
+              <div className="flex flex-wrap gap-4 mt-4 justify-center lg:justify-start">
+                <div className="px-3 py-1.5 rounded-lg bg-secondary text-sm">
+                  <span className="text-muted-foreground">Fee Payers:</span>{" "}
+                  <span className="font-mono text-foreground">{meta.uniqueFeePayers}</span>
+                </div>
+                <div className="px-3 py-1.5 rounded-lg bg-secondary text-sm">
+                  <span className="text-muted-foreground">Programs:</span>{" "}
+                  <span className="font-mono text-foreground">{meta.uniquePrograms}</span>
+                </div>
+                <div className="px-3 py-1.5 rounded-lg bg-secondary text-sm">
+                  <span className="text-muted-foreground">Signers:</span>{" "}
+                  <span className="font-mono text-foreground">{meta.uniqueSigners}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -113,10 +111,10 @@ export const AnalysisView = ({ data, onBack }: AnalysisViewProps) => {
               <MetricCard
                 title="Fee Payer Reuse"
                 value={`${(metrics.feePayerReuseRatio * 100).toFixed(0)}%`}
-                description="Ratio of unique fee payers to total transactions. High reuse enables clustering attacks."
+                description="Ratio of dominant fee payer to total transactions. High reuse enables clustering attacks."
                 risk={getRiskLevel(metrics.feePayerReuseRatio, [0.3, 0.6, 0.8])}
                 icon={<Wallet className="w-5 h-5" />}
-                detail={`${Math.round(metrics.feePayerReuseRatio * 100)}% transactions share fee payers`}
+                detail={meta ? `${meta.uniqueFeePayers} unique fee payers detected` : undefined}
               />
             </div>
             <div className="animate-fade-in-up" style={{ animationDelay: "0.25s" }}>
@@ -126,7 +124,7 @@ export const AnalysisView = ({ data, onBack }: AnalysisViewProps) => {
                 description="Measures how concentrated signing authority is. High concentration reveals org structure."
                 risk={getRiskLevel(metrics.signerConcentration, [0.3, 0.5, 0.7])}
                 icon={<Users className="w-5 h-5" />}
-                detail="Top signer handles most transactions"
+                detail={meta ? `${meta.uniqueSigners} unique signers detected` : undefined}
               />
             </div>
             <div className="animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
@@ -136,7 +134,7 @@ export const AnalysisView = ({ data, onBack }: AnalysisViewProps) => {
                 description="Behavioral uniqueness based on program interactions. Low entropy = unique fingerprint."
                 risk={getRiskLevel(1 - metrics.programEntropy, [0.3, 0.5, 0.7])}
                 icon={<Fingerprint className="w-5 h-5" />}
-                detail="Entropy score (0-1 scale)"
+                detail={meta ? `Top: ${meta.topPrograms.slice(0, 2).map(p => p.name).join(", ")}` : undefined}
               />
             </div>
             <div className="animate-fade-in-up" style={{ animationDelay: "0.35s" }}>
@@ -156,7 +154,7 @@ export const AnalysisView = ({ data, onBack }: AnalysisViewProps) => {
                 description="Scans for sensitive data in memo fields. Memos are permanently on-chain."
                 risk={metrics.memoDetected ? "critical" : "low"}
                 icon={<MessageSquare className="w-5 h-5" />}
-                detail={metrics.memoDetected ? "Potential PII found in memos" : "No memo data detected"}
+                detail={metrics.memoDetected ? "Memo program usage detected" : "No memo data detected"}
               />
             </div>
             <div className="animate-fade-in-up" style={{ animationDelay: "0.45s" }}>
@@ -166,7 +164,7 @@ export const AnalysisView = ({ data, onBack }: AnalysisViewProps) => {
                 description="Activity timing predictability. Low entropy reveals business hours and workflows."
                 risk={getRiskLevel(1 - metrics.temporalEntropy, [0.3, 0.5, 0.7])}
                 icon={<Clock className="w-5 h-5" />}
-                detail="Timing entropy score"
+                detail="Timing entropy score (0-1)"
               />
             </div>
           </div>
