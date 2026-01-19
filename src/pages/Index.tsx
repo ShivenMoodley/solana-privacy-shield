@@ -2,81 +2,22 @@ import { useState } from "react";
 import { WalletInput } from "@/components/WalletInput";
 import { AnalysisView } from "@/components/AnalysisView";
 import { Shield, Eye, Lock, Zap } from "lucide-react";
-
-// Mock analysis function - will be replaced with real API
-const mockAnalyze = async (wallet: string) => {
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  // Generate somewhat realistic mock data
-  const feePayerReuseRatio = 0.3 + Math.random() * 0.5;
-  const signerConcentration = 0.2 + Math.random() * 0.6;
-  const programEntropy = 0.3 + Math.random() * 0.5;
-  const counterpartyConcentration = 0.2 + Math.random() * 0.5;
-  const memoDetected = Math.random() > 0.7;
-  const temporalEntropy = 0.4 + Math.random() * 0.4;
-
-  // Calculate score
-  const score = Math.round(
-    100 - 
-    (feePayerReuseRatio * 20) - 
-    (signerConcentration * 15) - 
-    ((1 - programEntropy) * 15) - 
-    (counterpartyConcentration * 15) - 
-    (memoDetected ? 15 : 0) - 
-    ((1 - temporalEntropy) * 10)
-  );
-
-  return {
-    wallet,
-    score: Math.max(10, Math.min(95, score)),
-    metrics: {
-      feePayerReuseRatio,
-      signerConcentration,
-      programEntropy,
-      counterpartyConcentration,
-      memoDetected,
-      temporalEntropy,
-    },
-    report: {
-      summary: `This wallet exhibits ${score > 60 ? 'moderate' : 'elevated'} privacy risks based on analysis of ${Math.floor(200 + Math.random() * 100)} recent transactions. The primary concerns are fee payer clustering and program interaction fingerprinting. ${memoDetected ? 'Critical: Memo field data leakage was detected.' : ''} Immediate operational adjustments are recommended.`,
-      leaks: [
-        "Fee payer concentration creates strong wallet clustering signals",
-        "Program interaction patterns are highly distinctive and fingerprintable",
-        "Transaction timing shows predictable business-hour patterns",
-        ...(memoDetected ? ["Memo fields contain potential identifying information"] : []),
-        "Counterparty relationships reveal organizational structure",
-      ],
-      mitigations: [
-        "Rotate fee payer wallets using a pool of at least 5 addresses",
-        "Introduce random delays between transactions (30-300 second range)",
-        "Use privacy-preserving DEX aggregators to obscure trading patterns",
-        "Batch operations through program composition to reduce fingerprinting",
-        "Implement memo field policies - never include identifiable data",
-        "Consider using multiple operational wallets for different functions",
-      ],
-      checklist: [
-        "Audit all current fee payer addresses and create rotation schedule",
-        "Review memo usage across all transactions - remove sensitive data",
-        "Implement transaction timing randomization in operational scripts",
-        "Set up counterparty diversification strategy",
-        "Document and train team on privacy-preserving transaction practices",
-        "Schedule quarterly privacy posture reviews",
-      ],
-    },
-  };
-};
+import { analyzeWallet, type AnalysisResult } from "@/lib/api";
+import { toast } from "sonner";
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [analysisData, setAnalysisData] = useState<Awaited<ReturnType<typeof mockAnalyze>> | null>(null);
+  const [analysisData, setAnalysisData] = useState<AnalysisResult | null>(null);
 
   const handleAnalyze = async (wallet: string) => {
     setIsLoading(true);
     try {
-      const data = await mockAnalyze(wallet);
+      const data = await analyzeWallet(wallet);
       setAnalysisData(data);
+      toast.success("Analysis complete");
     } catch (error) {
       console.error("Analysis failed:", error);
+      toast.error(error instanceof Error ? error.message : "Analysis failed");
     } finally {
       setIsLoading(false);
     }
@@ -146,7 +87,7 @@ const Index = () => {
                 </div>
                 <h3 className="font-semibold text-foreground mb-2">Solana Native</h3>
                 <p className="text-sm text-muted-foreground">
-                  Deep analysis of fee payers, signers, program interactions, and memo fields.
+                  Deep analysis of fee payers, signers, program interactions, and memo fields via Helius.
                 </p>
               </div>
               
@@ -170,7 +111,7 @@ const Index = () => {
               Solana Privacy Copilot v1.0 • Built for Solana Privacy Hackathon 2026
             </p>
             <p className="text-muted-foreground text-sm">
-              No wallet signing required • Read-only analysis
+              Powered by Helius RPC • No wallet signing required
             </p>
           </div>
         </footer>
