@@ -4,11 +4,9 @@ import { AnalysisView } from "@/components/AnalysisView";
 import { Shield, Eye, Lock, Zap } from "lucide-react";
 import { analyzeWallet, type AnalysisResult } from "@/lib/api";
 import { toast } from "sonner";
-
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [analysisData, setAnalysisData] = useState<AnalysisResult | null>(null);
-
   const handleAnalyze = async (wallet: string) => {
     setIsLoading(true);
     try {
@@ -22,13 +20,10 @@ const Index = () => {
       setIsLoading(false);
     }
   };
-
   if (analysisData) {
     return <AnalysisView data={analysisData} onBack={() => setAnalysisData(null)} />;
   }
-
-  return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+  return <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background grid pattern */}
       <div className="absolute inset-0 bg-grid-pattern opacity-30" />
       
@@ -55,22 +50,27 @@ const Index = () => {
               AI-Powered Privacy Analysis
             </div>
             
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 animate-fade-in-up" style={{
+            animationDelay: "0.1s"
+          }}>
               Understand Your Wallet's{" "}
               <span className="text-gradient-primary">Privacy Risk</span>
             </h1>
             
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
-              Quantify linkability, detect metadata leakage, and get AI-generated 
-              mitigation strategies for your Solana wallet.
-            </p>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12 animate-fade-in-up" style={{
+            animationDelay: "0.2s"
+          }}>Quantify linkability, detect metadata leakage, and get mitigation strategies for your Solana wallet.</p>
 
-            <div className="animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
+            <div className="animate-fade-in-up" style={{
+            animationDelay: "0.3s"
+          }}>
               <WalletInput onSubmit={handleAnalyze} isLoading={isLoading} />
             </div>
 
             {/* Feature highlights */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-24 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-24 animate-fade-in-up" style={{
+            animationDelay: "0.4s"
+          }}>
               <div className="card-cyber rounded-xl p-6 text-left">
                 <div className="p-2.5 rounded-lg bg-primary/10 w-fit mb-4">
                   <Eye className="w-5 h-5 text-primary" />
@@ -116,8 +116,6 @@ const Index = () => {
           </div>
         </footer>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
