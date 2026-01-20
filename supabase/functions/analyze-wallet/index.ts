@@ -48,12 +48,16 @@ async function getSignatures(wallet: string, limit: number, apiKey: string): Pro
   return transactions.map((tx: any) => tx.signature);
 }
 
-// Fetch parsed transactions from Helius
+// Fetch parsed transactions from Helius (max 100 per request)
 async function getParsedTransactions(wallet: string, limit: number, apiKey: string): Promise<any[]> {
-  const url = `https://api.helius.xyz/v0/addresses/${wallet}/transactions?api-key=${apiKey}&limit=${limit}`;
+  // Helius API has a max limit of 100 transactions per request
+  const effectiveLimit = Math.min(limit, 100);
+  const url = `https://api.helius.xyz/v0/addresses/${wallet}/transactions?api-key=${apiKey}&limit=${effectiveLimit}`;
   
   const response = await fetch(url);
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Helius API error details:", response.status, errorText);
     throw new Error(`Helius API error: ${response.status}`);
   }
   
@@ -405,8 +409,8 @@ serve(async (req) => {
       );
     }
     
-    // Fetch transactions
-    const transactions = await getParsedTransactions(wallet, 200, HELIUS_API_KEY);
+    // Fetch transactions (Helius max is 100 per request)
+    const transactions = await getParsedTransactions(wallet, 100, HELIUS_API_KEY);
     console.log(`Fetched ${transactions.length} transactions`);
     
     if (transactions.length === 0) {
