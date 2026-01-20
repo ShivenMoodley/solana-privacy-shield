@@ -8,18 +8,21 @@ import {
   Loader2, 
   AlertCircle,
   Copy,
-  Coins
+  Coins,
+  Shield
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
 import type { AnalysisResult } from "@/lib/api";
 import { createHashPayload, computeReportHash } from "@/lib/report-hash";
 import { 
-  anchorReport, 
   checkDevnetBalance, 
   requestDevnetAirdrop,
-  type AnchorResult 
 } from "@/lib/anchor-service";
+import {
+  anchorReportWithProgram,
+  ANCHOR_PROGRAM_ID,
+} from "@/lib/anchor-program";
 
 interface AnchorReportProps {
   data: AnalysisResult;
@@ -27,10 +30,20 @@ interface AnchorReportProps {
 
 type AnchorState = "idle" | "connecting" | "signing" | "confirming" | "success" | "error";
 
+interface ExtendedAnchorResult {
+  signature: string;
+  explorerUrl: string;
+  timestamp: number;
+  hash: string;
+  slot: number;
+  usedCustomProgram?: boolean;
+  pda?: string;
+}
+
 export const AnchorReport = ({ data }: AnchorReportProps) => {
   const { publicKey, signTransaction, connected } = useWallet();
   const [state, setState] = useState<AnchorState>("idle");
-  const [result, setResult] = useState<AnchorResult | null>(null);
+  const [result, setResult] = useState<ExtendedAnchorResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hashHex, setHashHex] = useState<string | null>(null);
   const [isRequestingAirdrop, setIsRequestingAirdrop] = useState(false);
@@ -55,21 +68,26 @@ export const AnchorReport = ({ data }: AnchorReportProps) => {
 
       // Generate hash
       const payload = createHashPayload(data);
-      const { hashHex: computedHash } = await computeReportHash(payload);
+      const { hashHex: computedHash, hash: hashBytes } = await computeReportHash(payload);
       setHashHex(computedHash);
 
       setState("confirming");
       
-      // Anchor on-chain
-      const anchorResult = await anchorReport(
+      // Anchor on-chain (uses custom program if deployed, otherwise SPL Memo)
+      const anchorResult = await anchorReportWithProgram(
         { publicKey, signTransaction, connected },
         data.wallet,
-        computedHash
+        computedHash,
+        hashBytes
       );
-
       setResult(anchorResult);
+      
+      if (anchorResult.usedCustomProgram) {
+        toast.success("Report anchored via custom Anchor program!");
+      } else {
+        toast.success("Report anchored on Solana Devnet!");
+      }
       setState("success");
-      toast.success("Report anchored on Solana Devnet!");
     } catch (err) {
       console.error("Anchor error:", err);
       setError(err instanceof Error ? err.message : "Failed to anchor report");
@@ -115,10 +133,27 @@ export const AnchorReport = ({ data }: AnchorReportProps) => {
           <div className="p-2 rounded-lg bg-success/10">
             <CheckCircle2 className="w-5 h-5 text-success" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground">Report Anchored on Devnet</h3>
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">Report Anchored on Devnet</h3>
+            {result.usedCustomProgram && (
+              <div className="flex items-center gap-1.5 mt-1">
+                <Shield className="w-3.5 h-3.5 text-primary" />
+                <span className="text-xs text-primary">Custom Anchor Program</span>
+              </div>
+            )}
+          </div>
         </div>
         
         <div className="space-y-4">
+          {result.pda && (
+            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 space-y-2">
+              <span className="text-sm font-medium text-primary">Report PDA Account</span>
+              <code className="text-xs font-mono text-foreground break-all block">
+                {result.pda}
+              </code>
+            </div>
+          )}
+
           <div className="p-4 rounded-lg bg-secondary/50 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Report Hash</span>
