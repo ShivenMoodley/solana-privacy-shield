@@ -1,6 +1,7 @@
 import { ScoreGauge } from "./ScoreGauge";
 import { MetricCard } from "./MetricCard";
 import { ReportSection } from "./ReportSection";
+import { AnchorReport } from "./AnchorReport";
 import { 
   Users, 
   Fingerprint, 
@@ -174,6 +175,12 @@ export const AnalysisView = ({ data, onBack }: AnalysisViewProps) => {
         <div className="animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
           <h2 className="text-xl font-semibold text-foreground mb-6">AI Privacy Report</h2>
           <ReportSection report={report} />
+        </div>
+
+        {/* Devnet Anchoring */}
+        <div className="mt-12 animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
+          <h2 className="text-xl font-semibold text-foreground mb-6">Integrity Proof</h2>
+          <AnchorReport data={data} />
         </div>
       </main>
 
