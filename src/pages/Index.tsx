@@ -111,7 +111,7 @@ const Index = () => {
               Solana Privacy Copilot v1.0 • Built for Solana Privacy Hackathon 2026
             </p>
             <p className="text-muted-foreground text-sm">
-              Powered by Helius RPC • No wallet signing required
+              Powered by Helius RPC • Devnet anchoring available
             </p>
           </div>
         </footer>
