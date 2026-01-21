@@ -1,9 +1,15 @@
 import { useState } from "react";
 import { WalletInput } from "@/components/WalletInput";
 import { AnalysisView } from "@/components/AnalysisView";
-import { Shield, Eye, Lock, Zap, Search, Brain, FileText, Anchor } from "lucide-react";
+import { Shield, Eye, Lock, Zap, Search, Brain, FileText, Anchor, HelpCircle } from "lucide-react";
 import { analyzeWallet, type AnalysisResult } from "@/lib/api";
 import { toast } from "sonner";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [analysisData, setAnalysisData] = useState<AnalysisResult | null>(null);
@@ -188,6 +194,96 @@ const Index = () => {
                   <Anchor className="w-4 h-4 text-primary" />
                   Step 4 is optional — connect your wallet only if you want on-chain proof
                 </div>
+              </div>
+            </div>
+
+            {/* FAQ Section */}
+            <div className="mt-32 animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+                  <HelpCircle className="w-4 h-4" />
+                  FAQ
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+                  Frequently Asked Questions
+                </h2>
+                <p className="text-muted-foreground max-w-xl mx-auto">
+                  Everything you need to know about privacy analysis and on-chain anchoring
+                </p>
+              </div>
+
+              <div className="max-w-3xl mx-auto">
+                <Accordion type="single" collapsible className="space-y-4">
+                  <AccordionItem value="item-1" className="card-cyber rounded-xl px-6 border-none">
+                    <AccordionTrigger className="text-foreground hover:no-underline">
+                      What is a privacy score and how is it calculated?
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground">
+                      The privacy score is a composite metric (0-100) calculated across 6 dimensions: 
+                      address reuse patterns, fee payer linkability, counterparty concentration, 
+                      program interaction diversity, temporal patterns, and memo field exposure. 
+                      Higher scores indicate better privacy practices.
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="item-2" className="card-cyber rounded-xl px-6 border-none">
+                    <AccordionTrigger className="text-foreground hover:no-underline">
+                      Is my wallet data stored or shared?
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground">
+                      No. All analysis is performed on publicly available blockchain data. 
+                      We don't store your wallet address, transaction history, or analysis results 
+                      on our servers. The analysis runs in real-time and results exist only in your browser session.
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="item-3" className="card-cyber rounded-xl px-6 border-none">
+                    <AccordionTrigger className="text-foreground hover:no-underline">
+                      What is Devnet anchoring and why would I use it?
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground">
+                      Devnet anchoring creates a tamper-proof record of your privacy report by storing 
+                      a cryptographic hash (SHA-256) on Solana's Devnet. This provides verifiable proof 
+                      that the report existed at a specific time and hasn't been altered. It's useful for 
+                      audit trails, compliance documentation, or personal record-keeping.
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="item-4" className="card-cyber rounded-xl px-6 border-none">
+                    <AccordionTrigger className="text-foreground hover:no-underline">
+                      Does anchoring cost real SOL?
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground">
+                      No. Anchoring uses Solana Devnet, which requires Devnet SOL (not real money). 
+                      You can request free Devnet SOL directly from our interface using the airdrop button. 
+                      The transaction fee is approximately 0.000005 SOL.
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="item-5" className="card-cyber rounded-xl px-6 border-none">
+                    <AccordionTrigger className="text-foreground hover:no-underline">
+                      Which wallets are supported for anchoring?
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground">
+                      We currently support Phantom and Solflare wallets for signing Devnet transactions. 
+                      Make sure your wallet is set to Devnet network before connecting. 
+                      Note: You can analyze any wallet address without connecting — wallet connection 
+                      is only needed for the optional anchoring feature.
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="item-6" className="card-cyber rounded-xl px-6 border-none">
+                    <AccordionTrigger className="text-foreground hover:no-underline">
+                      How can I verify an anchored report?
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground">
+                      After anchoring, you'll receive a Solana Explorer link to view the transaction. 
+                      The transaction contains a memo with the report hash. You can verify integrity 
+                      by recomputing the SHA-256 hash of your report data and comparing it to the 
+                      on-chain value. We plan to add a built-in verification tool soon.
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </div>
             </div>
           </div>
