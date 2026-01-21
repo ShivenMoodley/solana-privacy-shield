@@ -32,6 +32,16 @@ export interface AnalysisResult {
   meta: AnalysisMeta;
 }
 
+export class RateLimitError extends Error {
+  retryAfter: number;
+  
+  constructor(message: string, retryAfter: number) {
+    super(message);
+    this.name = "RateLimitError";
+    this.retryAfter = retryAfter;
+  }
+}
+
 export async function analyzeWallet(wallet: string): Promise<AnalysisResult> {
   const { data, error } = await supabase.functions.invoke("analyze-wallet", {
     body: { wallet },
@@ -43,6 +53,10 @@ export async function analyzeWallet(wallet: string): Promise<AnalysisResult> {
   }
 
   if (data.error) {
+    // Check for rate limit error
+    if (data.retryAfter) {
+      throw new RateLimitError(data.error, data.retryAfter);
+    }
     throw new Error(data.error);
   }
 

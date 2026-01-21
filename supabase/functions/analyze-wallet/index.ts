@@ -1,9 +1,58 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Rate limiting configuration
+const RATE_LIMIT_MAX_REQUESTS = 10; // Max requests per window
+const RATE_LIMIT_WINDOW_MINUTES = 60; // Window duration in minutes
+
+// Get client IP from request headers
+function getClientIP(req: Request): string {
+  // Check various headers for the real IP
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    return forwardedFor.split(",")[0].trim();
+  }
+  
+  const realIP = req.headers.get("x-real-ip");
+  if (realIP) {
+    return realIP;
+  }
+  
+  const cfConnectingIP = req.headers.get("cf-connecting-ip");
+  if (cfConnectingIP) {
+    return cfConnectingIP;
+  }
+  
+  return "unknown";
+}
+
+// Check rate limit using Supabase function
+async function checkRateLimit(supabase: any, ip: string, endpoint: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.rpc("check_rate_limit", {
+      p_ip_address: ip,
+      p_endpoint: endpoint,
+      p_max_requests: RATE_LIMIT_MAX_REQUESTS,
+      p_window_minutes: RATE_LIMIT_WINDOW_MINUTES,
+    });
+    
+    if (error) {
+      console.error("Rate limit check error:", error);
+      // Allow request on error to avoid blocking legitimate users
+      return true;
+    }
+    
+    return data === true;
+  } catch (err) {
+    console.error("Rate limit exception:", err);
+    return true; // Allow on error
+  }
+}
 
 interface TransactionMeta {
   feePayer: string;
@@ -390,11 +439,58 @@ serve(async (req) => {
   }
   
   try {
+    // Initialize Supabase client with service role for rate limiting
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Supabase configuration missing");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Get client IP and check rate limit
+    const clientIP = getClientIP(req);
+    console.log(`Request from IP: ${clientIP}`);
+    
+    const isAllowed = await checkRateLimit(supabase, clientIP, "analyze-wallet");
+    
+    if (!isAllowed) {
+      console.log(`Rate limit exceeded for IP: ${clientIP}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Rate limit exceeded. Please try again later.",
+          retryAfter: RATE_LIMIT_WINDOW_MINUTES * 60 
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json",
+            "Retry-After": String(RATE_LIMIT_WINDOW_MINUTES * 60)
+          } 
+        }
+      );
+    }
+    
     const { wallet } = await req.json();
     
     if (!wallet || typeof wallet !== "string") {
       return new Response(
         JSON.stringify({ error: "Invalid wallet address" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // Validate Solana address format
+    const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+    if (!base58Regex.test(wallet)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid Solana wallet address format" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
