@@ -2,7 +2,7 @@ import { useState } from "react";
 import { WalletInput } from "@/components/WalletInput";
 import { AnalysisView } from "@/components/AnalysisView";
 import { Shield, Eye, Lock, Zap, Search, Brain, FileText, Anchor, HelpCircle } from "lucide-react";
-import { analyzeWallet, type AnalysisResult } from "@/lib/api";
+import { analyzeWallet, RateLimitError, type AnalysisResult } from "@/lib/api";
 import { toast } from "sonner";
 import {
   Accordion,
@@ -21,7 +21,12 @@ const Index = () => {
       toast.success("Analysis complete");
     } catch (error) {
       console.error("Analysis failed:", error);
-      toast.error(error instanceof Error ? error.message : "Analysis failed");
+      if (error instanceof RateLimitError) {
+        const minutes = Math.ceil(error.retryAfter / 60);
+        toast.error(`Rate limit exceeded. Please try again in ${minutes} minutes.`);
+      } else {
+        toast.error(error instanceof Error ? error.message : "Analysis failed");
+      }
     } finally {
       setIsLoading(false);
     }
