@@ -80,7 +80,7 @@ export const WalletInput = ({ onSubmit, isLoading }: WalletInputProps) => {
       )}
 
       <p className="text-center text-muted-foreground text-sm mt-4">
-        Read-only analysis • No wallet signing required
+        Analyze any wallet • Optional on-chain anchoring on Devnet
       </p>
     </form>
   );
