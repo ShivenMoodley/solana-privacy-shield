@@ -10,6 +10,38 @@ const corsHeaders = {
 const RATE_LIMIT_MAX_REQUESTS = 10; // Max requests per window
 const RATE_LIMIT_WINDOW_MINUTES = 60; // Window duration in minutes
 
+// Base58 alphabet for Solana addresses
+const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+// Decode base58 string to bytes for cryptographic validation
+function decodeBase58(str: string): Uint8Array {
+  const result: number[] = [];
+  for (const char of str) {
+    let carry = BASE58_ALPHABET.indexOf(char);
+    if (carry === -1) {
+      throw new Error(`Invalid base58 character: ${char}`);
+    }
+    for (let i = 0; i < result.length; i++) {
+      carry += result[i] * 58;
+      result[i] = carry & 0xff;
+      carry >>= 8;
+    }
+    while (carry > 0) {
+      result.push(carry & 0xff);
+      carry >>= 8;
+    }
+  }
+  // Handle leading '1's (zeros in base58)
+  for (const char of str) {
+    if (char === '1') {
+      result.push(0);
+    } else {
+      break;
+    }
+  }
+  return new Uint8Array(result.reverse());
+}
+
 // Get client IP from request headers
 function getClientIP(req: Request): string {
   // Check various headers for the real IP
@@ -494,11 +526,25 @@ serve(async (req) => {
       );
     }
     
-    // Validate Solana address format
+    // Validate Solana address format with regex first (fast check)
     const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
     if (!base58Regex.test(wallet)) {
       return new Response(
         JSON.stringify({ error: "Invalid Solana wallet address format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // Cryptographic validation using base58 decoding
+    // A valid Solana public key is exactly 32 bytes when decoded
+    try {
+      const decoded = decodeBase58(wallet);
+      if (decoded.length !== 32) {
+        throw new Error("Invalid public key length");
+      }
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid Solana wallet address - not a valid public key" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
