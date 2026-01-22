@@ -1,4 +1,4 @@
-import { useState } from "react";
+import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Search, AlertCircle } from "lucide-react";
 
@@ -7,9 +7,10 @@ interface WalletInputProps {
   isLoading?: boolean;
 }
 
-export const WalletInput = ({ onSubmit, isLoading }: WalletInputProps) => {
-  const [wallet, setWallet] = useState("");
-  const [error, setError] = useState("");
+export const WalletInput = React.forwardRef<HTMLFormElement, WalletInputProps>(
+  ({ onSubmit, isLoading }, ref) => {
+  const [wallet, setWallet] = React.useState("");
+  const [error, setError] = React.useState("");
 
   const validateSolanaAddress = (address: string): boolean => {
     // Basic Solana address validation (base58, 32-44 chars)
@@ -36,7 +37,7 @@ export const WalletInput = ({ onSubmit, isLoading }: WalletInputProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto">
+    <form ref={ref} onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto">
       <div className="relative group">
         <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/50 to-primary/20 rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300" />
         <div className="relative flex items-center gap-3 bg-card border border-border rounded-xl p-2">
@@ -84,4 +85,9 @@ export const WalletInput = ({ onSubmit, isLoading }: WalletInputProps) => {
       </p>
     </form>
   );
-};
+  },
+);
+
+WalletInput.displayName = "WalletInput";
+
+
