@@ -80,11 +80,15 @@ interface PrivacyMetrics {
 
 // Fetch transaction signatures from Helius
 async function getSignatures(wallet: string, limit: number, apiKey: string): Promise<string[]> {
-  const url = `https://api.helius.xyz/v0/addresses/${wallet}/transactions?api-key=${apiKey}&limit=${limit}`;
+  const url = `https://api.helius.xyz/v0/addresses/${wallet}/transactions?limit=${limit}`;
   
   console.log(`Fetching signatures for wallet: ${wallet}`);
   
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+    },
+  });
   if (!response.ok) {
     const errorText = await response.text();
     console.error("Helius API error:", response.status, errorText);
@@ -101,9 +105,13 @@ async function getSignatures(wallet: string, limit: number, apiKey: string): Pro
 async function getParsedTransactions(wallet: string, limit: number, apiKey: string): Promise<any[]> {
   // Helius API has a max limit of 100 transactions per request
   const effectiveLimit = Math.min(limit, 100);
-  const url = `https://api.helius.xyz/v0/addresses/${wallet}/transactions?api-key=${apiKey}&limit=${effectiveLimit}`;
+  const url = `https://api.helius.xyz/v0/addresses/${wallet}/transactions?limit=${effectiveLimit}`;
   
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+    },
+  });
   if (!response.ok) {
     const errorText = await response.text();
     console.error("Helius API error details:", response.status, errorText);
