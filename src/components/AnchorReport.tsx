@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { 
   Anchor, 
   ExternalLink, 
@@ -9,7 +9,8 @@ import {
   AlertCircle,
   Copy,
   Coins,
-  Shield
+  Shield,
+  Wallet
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
@@ -41,12 +42,21 @@ interface ExtendedAnchorResult {
 }
 
 export const AnchorReport = ({ data }: AnchorReportProps) => {
-  const { publicKey, signTransaction, connected } = useWallet();
+  const { publicKey, signTransaction, connected, disconnect, wallet } = useWallet();
+  const { setVisible } = useWalletModal();
   const [state, setState] = useState<AnchorState>("idle");
   const [result, setResult] = useState<ExtendedAnchorResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hashHex, setHashHex] = useState<string | null>(null);
   const [isRequestingAirdrop, setIsRequestingAirdrop] = useState(false);
+
+  const handleConnectClick = () => {
+    setVisible(true);
+  };
+
+  const handleDisconnect = async () => {
+    await disconnect();
+  };
 
   const handleAnchor = async () => {
     if (!connected || !publicKey || !signTransaction) {
@@ -256,7 +266,10 @@ export const AnchorReport = ({ data }: AnchorReportProps) => {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         {!connected ? (
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
-            <WalletMultiButton className="!bg-primary hover:!bg-primary/90 !h-10 !rounded-lg !font-medium" />
+            <Button onClick={handleConnectClick} className="gap-2">
+              <Wallet className="w-4 h-4" />
+              Connect
+            </Button>
             <span className="text-sm text-muted-foreground text-center sm:text-left">
               Connect wallet to anchor report
             </span>
@@ -280,7 +293,14 @@ export const AnchorReport = ({ data }: AnchorReportProps) => {
               )}
               Request Devnet SOL
             </Button>
-            <WalletMultiButton className="!bg-secondary hover:!bg-secondary/80 !h-10 !rounded-lg !font-medium !text-sm" />
+            <Button 
+              variant="secondary" 
+              onClick={handleDisconnect}
+              className="gap-2"
+            >
+              <Wallet className="w-4 h-4" />
+              {wallet?.adapter.name || "Disconnect"}
+            </Button>
           </div>
         )}
       </div>
